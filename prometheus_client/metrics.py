@@ -16,7 +16,7 @@ from .metrics_core import (
 )
 from .registry import Collector, CollectorRegistry, REGISTRY
 from .samples import Exemplar, Sample
-from .utils import floatToGoString, INF
+from .utils import floatToGoString, INF, get_multiproc_dir
 
 T = TypeVar('T', bound='MetricWrapperBase')
 F = TypeVar("F", bound=Callable[..., Any])
@@ -211,7 +211,7 @@ class MetricWrapperBase(Collector):
             return self._metrics[labelvalues]
 
     def remove(self, *labelvalues: Any) -> None:
-        if 'prometheus_multiproc_dir' in os.environ or 'PROMETHEUS_MULTIPROC_DIR' in os.environ:
+        if get_multiproc_dir():
             warnings.warn(
                 "Removal of labels has not been implemented in  multi-process mode yet.",
                 UserWarning)
@@ -228,7 +228,7 @@ class MetricWrapperBase(Collector):
 
     def clear(self) -> None:
         """Remove all labelsets from the metric"""
-        if 'prometheus_multiproc_dir' in os.environ or 'PROMETHEUS_MULTIPROC_DIR' in os.environ:
+        if get_multiproc_dir():
             warnings.warn(
                 "Clearing labels has not been implemented in multi-process mode yet",
                 UserWarning)
