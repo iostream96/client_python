@@ -131,7 +131,7 @@ class MetricWrapperBase(Collector):
                  unit: str = '',
                  registry: Optional[CollectorRegistry] = REGISTRY,
                  _labelvalues: Optional[Sequence[str]] = None,
-                 filePath: Optional[str] = None
+                 filePath: Optional[str] = ''
                  ) -> None:
         self._name = _build_full_name(self._type, name, namespace, subsystem, unit)
         self._labelnames = _validate_labelnames(self, labelnames)
@@ -640,7 +640,8 @@ class Histogram(MetricWrapperBase):
                 self._name + '_bucket',
                 bucket_labelnames,
                 self._labelvalues + (floatToGoString(b),),
-                self._documentation, file_path=self._filePath)
+                self._documentation, 
+                file_path=self._filePath)
             )
 
     def observe(self, amount: float, exemplar: Optional[Dict[str, str]] = None) -> None:
