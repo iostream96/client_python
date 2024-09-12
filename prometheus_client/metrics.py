@@ -16,7 +16,7 @@ from .metrics_core import (
 )
 from .registry import Collector, CollectorRegistry, REGISTRY
 from .samples import Exemplar, Sample
-from .utils import floatToGoString, INF, get_multiproc_dir
+from .utils import floatToGoString, INF, getMultiprocDir
 
 T = TypeVar('T', bound='MetricWrapperBase')
 F = TypeVar("F", bound=Callable[..., Any])
@@ -131,6 +131,7 @@ class MetricWrapperBase(Collector):
                  unit: str = '',
                  registry: Optional[CollectorRegistry] = REGISTRY,
                  _labelvalues: Optional[Sequence[str]] = None,
+                 filePath: Optional[str] = None
                  ) -> None:
         self._name = _build_full_name(self._type, name, namespace, subsystem, unit)
         self._labelnames = _validate_labelnames(self, labelnames)
@@ -138,6 +139,7 @@ class MetricWrapperBase(Collector):
         self._kwargs: Dict[str, Any] = {}
         self._documentation = documentation
         self._unit = unit
+        self._filePath = filePath
 
         if not METRIC_NAME_RE.match(self._name):
             raise ValueError('Invalid metric name: ' + self._name)
@@ -211,7 +213,7 @@ class MetricWrapperBase(Collector):
             return self._metrics[labelvalues]
 
     def remove(self, *labelvalues: Any) -> None:
-        if get_multiproc_dir():
+        if getMultiprocDir():
             warnings.warn(
                 "Removal of labels has not been implemented in  multi-process mode yet.",
                 UserWarning)
@@ -228,7 +230,7 @@ class MetricWrapperBase(Collector):
 
     def clear(self) -> None:
         """Remove all labelsets from the metric"""
-        if get_multiproc_dir():
+        if getMultiprocDir():
             warnings.warn(
                 "Clearing labels has not been implemented in multi-process mode yet",
                 UserWarning)
@@ -292,7 +294,7 @@ class Counter(MetricWrapperBase):
         # Count only one type of exception
         with c.count_exceptions(ValueError):
             pass
-            
+
     You can also reset the counter to zero in case your logical "process" restarts
     without restarting the actual python process.
 
@@ -303,7 +305,7 @@ class Counter(MetricWrapperBase):
 
     def _metric_init(self) -> None:
         self._value = values.ValueClass(self._type, self._name, self._name + '_total', self._labelnames,
-                                        self._labelvalues, self._documentation)
+                                        self._labelvalues, self._documentation, file_path=self._filePath)
         self._created = time.time()
 
     def inc(self, amount: float = 1, exemplar: Optional[Dict[str, str]] = None) -> None:
@@ -412,7 +414,7 @@ class Gauge(MetricWrapperBase):
     def _metric_init(self) -> None:
         self._value = values.ValueClass(
             self._type, self._name, self._name, self._labelnames, self._labelvalues,
-            self._documentation, multiprocess_mode=self._multiprocess_mode
+            self._documentation, multiprocess_mode=self._multiprocess_mode, file_path=self._filePath
         )
 
     def inc(self, amount: float = 1) -> None:
@@ -511,8 +513,9 @@ class Summary(MetricWrapperBase):
 
     def _metric_init(self) -> None:
         self._count = values.ValueClass(self._type, self._name, self._name + '_count', self._labelnames,
-                                        self._labelvalues, self._documentation)
-        self._sum = values.ValueClass(self._type, self._name, self._name + '_sum', self._labelnames, self._labelvalues, self._documentation)
+                                        self._labelvalues, self._documentation, file_path=self._filePath)
+        self._sum = values.ValueClass(self._type, self._name, self._name + '_sum', self._labelnames, 
+                                      self._labelvalues, self._documentation, file_path=self._filePath)
         self._created = time.time()
 
     def observe(self, amount: float) -> None:
@@ -633,7 +636,7 @@ class Histogram(MetricWrapperBase):
                 self._name + '_bucket',
                 bucket_labelnames,
                 self._labelvalues + (floatToGoString(b),),
-                self._documentation)
+                self._documentation, file_path=self._filePath)
             )
 
     def observe(self, amount: float, exemplar: Optional[Dict[str, str]] = None) -> None:

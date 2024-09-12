@@ -2,7 +2,7 @@ import os
 from threading import Lock
 
 from .mmap_dict import mmap_key, MmapedDict
-from .utils import get_multiproc_dir
+from .utils import getMultiprocDir
 
 
 class MutexValue:
@@ -57,22 +57,22 @@ def MultiProcessValue(process_identifier=os.getpid):
 
         _multiprocess = True
 
-        def __init__(self, typ, metric_name, name, labelnames, labelvalues, help_text, multiprocess_mode='', **kwargs):
-            self._params = typ, metric_name, name, labelnames, labelvalues, help_text, multiprocess_mode
+        def __init__(self, typ, metric_name, name, labelnames, labelvalues, help_text, multiprocess_mode='', file_path='', **kwargs):
+            self._params = typ, metric_name, name, labelnames, labelvalues, help_text, multiprocess_mode, file_path or getMultiprocDir()
             with lock:
                 self.__check_for_pid_change()
                 self.__reset()
                 values.append(self)
 
         def __reset(self):
-            typ, metric_name, name, labelnames, labelvalues, help_text, multiprocess_mode = self._params
+            typ, metric_name, name, labelnames, labelvalues, help_text, multiprocess_mode, file_path = self._params
             if typ == 'gauge':
                 file_prefix = typ + '_' + multiprocess_mode
             else:
                 file_prefix = typ
             if file_prefix not in files:
                 filename = os.path.join(
-                    get_multiproc_dir(),
+                    file_path,
                     '{}_{}.db'.format(file_prefix, pid['value']))
 
                 files[file_prefix] = MmapedDict(filename)
@@ -126,7 +126,7 @@ def get_value_class():
     # This needs to be chosen before the first metric is constructed,
     # and as that may be in some arbitrary library the user/admin has
     # no control over we use an environment variable.
-    if get_multiproc_dir():
+    if getMultiprocDir():
         return MultiProcessValue()
     else:
         return MutexValue
