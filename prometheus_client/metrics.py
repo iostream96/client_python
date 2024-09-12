@@ -394,6 +394,7 @@ class Gauge(MetricWrapperBase):
                  registry: Optional[CollectorRegistry] = REGISTRY,
                  _labelvalues: Optional[Sequence[str]] = None,
                  multiprocess_mode: Literal['all', 'liveall', 'min', 'livemin', 'max', 'livemax', 'sum', 'livesum', 'mostrecent', 'livemostrecent'] = 'all',
+                 filePath: Optional[str] = None
                  ):
         self._multiprocess_mode = multiprocess_mode
         if multiprocess_mode not in self._MULTIPROC_MODES:
@@ -407,6 +408,7 @@ class Gauge(MetricWrapperBase):
             unit=unit,
             registry=registry,
             _labelvalues=_labelvalues,
+            filePath=filePath
         )
         self._kwargs['multiprocess_mode'] = self._multiprocess_mode
         self._is_most_recent = self._multiprocess_mode in self._MOST_RECENT_MODES
@@ -598,6 +600,7 @@ class Histogram(MetricWrapperBase):
                  registry: Optional[CollectorRegistry] = REGISTRY,
                  _labelvalues: Optional[Sequence[str]] = None,
                  buckets: Sequence[Union[float, str]] = DEFAULT_BUCKETS,
+                 filePath: Optional[str] = None
                  ):
         self._prepare_buckets(buckets)
         super().__init__(
@@ -609,6 +612,7 @@ class Histogram(MetricWrapperBase):
             unit=unit,
             registry=registry,
             _labelvalues=_labelvalues,
+            filePath=filePath
         )
         self._kwargs['buckets'] = buckets
 
@@ -628,7 +632,7 @@ class Histogram(MetricWrapperBase):
         self._buckets: List[values.ValueClass] = []
         self._created = time.time()
         bucket_labelnames = self._labelnames + ('le',)
-        self._sum = values.ValueClass(self._type, self._name, self._name + '_sum', self._labelnames, self._labelvalues, self._documentation)
+        self._sum = values.ValueClass(self._type, self._name, self._name + '_sum', self._labelnames, self._labelvalues, self._documentation, file_path=self._filePath)
         for b in self._upper_bounds:
             self._buckets.append(values.ValueClass(
                 self._type,
@@ -743,6 +747,7 @@ class Enum(MetricWrapperBase):
                  registry: Optional[CollectorRegistry] = REGISTRY,
                  _labelvalues: Optional[Sequence[str]] = None,
                  states: Optional[Sequence[str]] = None,
+                 filePath: Optional[str] = None
                  ):
         super().__init__(
             name=name,
@@ -753,6 +758,7 @@ class Enum(MetricWrapperBase):
             unit=unit,
             registry=registry,
             _labelvalues=_labelvalues,
+            filePath=filePath
         )
         if name in labelnames:
             raise ValueError(f'Overlapping labels for Enum metric: {name}')
